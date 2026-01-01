@@ -22,11 +22,14 @@ def verify():
 
     data = request.get_json(force=True, silent=True) or {}
     text = data.get("text", "")
+    language = data.get("language", "zh-TW")  # 預設繁體中文
+    
+    print(f"[POST /verify] language={language}, text_length={len(text)}")
 
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    result = agent.run(text)
+    result = agent.run(text, language=language)
     return jsonify(result)
 
 
