@@ -249,6 +249,9 @@ extractors  evidence_processor
    DuckDuckGo Search
 ```
 
+### 流程圖
+![System Workflow DAG](DAG.png)
+
 ### 三層驗證流程（新聞模式）
 
 ```
