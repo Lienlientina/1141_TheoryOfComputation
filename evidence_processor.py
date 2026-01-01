@@ -11,14 +11,84 @@ from temporal_checker import (
     is_temporally_relevant
 )
 from datetime import datetime
+from urllib.parse import urlparse
+
+# 官方來源域名列表
+OFFICIAL_DOMAINS = {
+    # 政府域名（各國）
+    '.gov',         # 美國政府
+    '.gov.tw',      # 台灣政府
+    '.gov.uk',      # 英國政府
+    '.go.jp',       # 日本政府
+    '.gov.cn',      # 中國政府
+    '.gov.au',      # 澳洲政府
+    '.gouv.fr',     # 法國政府
+    '.gc.ca',       # 加拿大政府
+    '.gob.mx',      # 墨西哥政府
+    '.gob.es',      # 西班牙政府
+    '.gov.sg',      # 新加坡政府
+    '.go.kr',       # 韓國政府
+    
+    # 教育機構
+    '.edu',         # 美國教育機構
+    '.edu.tw',      # 台灣教育機構
+    '.ac.uk',       # 英國學術機構
+    '.ac.jp',       # 日本學術機構
+    '.edu.au',      # 澳洲教育機構
+}
+
+INTERNATIONAL_ORGS = [
+    'un.org',           # 聯合國
+    'who.int',          # 世界衛生組織
+    'imf.org',          # 國際貨幣基金
+    'worldbank.org',    # 世界銀行
+    'wto.org',          # 世界貿易組織
+    'oecd.org',         # 經濟合作暨發展組織
+    'unesco.org',       # 聯合國教科文組織
+]
 
 
-def generate_search_query(claim):
+def get_source_credibility_tier(url):
+    """
+    判斷來源可信度等級
+    
+    Args:
+        url: 證據來源 URL
+    
+    Returns:
+        "official": 政府機構或國際組織
+        "standard": 一般來源
+    """
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        
+        # 移除 www. 前綴
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # 檢查政府域名後綴
+        for suffix in OFFICIAL_DOMAINS:
+            if domain.endswith(suffix):
+                return "official"
+        
+        # 檢查國際組織
+        for org in INTERNATIONAL_ORGS:
+            if org in domain:
+                return "official"
+        
+        return "standard"
+    except:
+        return "standard"
+
+
+def generate_search_query(claim, search_mode='general'):
     """
     從claim中提取最佳搜尋關鍵字
     
     Args:
         claim: 待驗證的主張
+        search_mode: 'official' (官方來源) 或 'general' (一般搜尋)
     
     Returns:
         優化後的搜尋查詢字串
@@ -53,6 +123,16 @@ def generate_search_query(claim):
             if loc in claim and loc not in query:
                 query = f"{loc} {query}"
                 break
+        
+        # 官方來源模式：添加 site: 過濾器
+        if search_mode == 'official':
+            official_sites = [
+                "site:.gov", "site:.gov.tw", "site:.gov.uk", "site:.go.jp",
+                "site:.edu", "site:.edu.tw", "site:.ac.uk",
+                "site:who.int", "site:un.org", "site:imf.org", "site:worldbank.org"
+            ]
+            site_filter = " OR ".join(official_sites)
+            query = f"{query} ({site_filter})"
         
         return query if len(query) > 0 else claim
     except Exception:
@@ -144,7 +224,9 @@ def verify_claim(claim, language="zh-TW", temporal_check=True, claim_reference_d
             "evidence_count": int,
             "search_query": str,
             "evidence_breakdown": {"support": int, "refute": int, "irrelevant": int},
-            "temporal_warning": str (optional)
+            "temporal_warning": str (optional),
+            "source_type": "official" | "general" (optional),
+            "authoritative_override": bool (optional)
         }
     """
     # 初始化預設值，避免變數未定義
@@ -160,20 +242,87 @@ def verify_claim(claim, language="zh-TW", temporal_check=True, claim_reference_d
         try:
             claim_time_expression = extract_time_from_claim(claim)
             if claim_time_expression:
-                print(f"  → 發現時間描述: {claim_time_expression}")
+                print(f"  -> 發現時間描述: {claim_time_expression}")
                 # 使用 claim 的發布日期作為參考點
                 ref_date = claim_reference_date or datetime.now().isoformat()
                 claim_time_info = normalize_time_expression(claim_time_expression, ref_date)
-                print(f"  → 標準化時間: {claim_time_info.get('parsed_date')} ({claim_time_info.get('time_type')})")
+                print(f"  -> 標準化時間: {claim_time_info.get('parsed_date')} ({claim_time_info.get('time_type')})")
         except Exception as e:
             print(f"  Warning: Time extraction failed ({e})")
 
+    # === 第一階段：搜尋官方來源 ===
+    print(f"\n  [階段1] 搜尋官方來源...")
+    official_query = generate_search_query(claim, search_mode='official')
+    print(f"  -> 官方搜尋關鍵字: {official_query}")
+    
+    try:
+        official_results = web_search(official_query, max_results=5)
+        print(f"  -> 找到 {len(official_results)} 個搜尋結果")
+        
+        # 過濾出真正的官方來源
+        verified_official = []
+        for result in official_results:
+            if get_source_credibility_tier(result.get('href', '')) == 'official':
+                verified_official.append(result)
+        
+        if verified_official:
+            print(f"  [官方來源] 找到 {len(verified_official)} 個官方來源，直接採信")
+            
+            # 分析第一個官方來源的立場
+            first_official = verified_official[0]
+            stance = analyze_evidence_stance(
+                claim,
+                first_official.get('title', ''),
+                first_official.get('body', '')
+            )
+            
+            official_url = first_official.get('href', 'N/A')
+            
+            if stance == 'support':
+                return {
+                    "verdict": "Supported",
+                    "explanation": f"🏛️ 官方來源證實：{official_url}\n\n{first_official.get('body', '')[:300]}...",
+                    "evidence_count": len(verified_official),
+                    "search_query": official_query,
+                    "source_type": "official",
+                    "authoritative_override": True,
+                    "evidence_breakdown": {
+                        "support": len(verified_official),
+                        "refute": 0,
+                        "irrelevant": 0,
+                        "official_sources": verified_official
+                    }
+                }
+            elif stance == 'refute':
+                return {
+                    "verdict": "Contradicted",
+                    "explanation": f"🏛️ 官方來源反駁：{official_url}\n\n{first_official.get('body', '')[:300]}...",
+                    "evidence_count": len(verified_official),
+                    "search_query": official_query,
+                    "source_type": "official",
+                    "authoritative_override": True,
+                    "evidence_breakdown": {
+                        "support": 0,
+                        "refute": len(verified_official),
+                        "irrelevant": 0,
+                        "official_sources": verified_official
+                    }
+                }
+            else:
+                print(f"  [官方來源] 官方來源不相關，繼續一般搜尋")
+        else:
+            print(f"  [官方來源] 未找到可信官方來源")
+    except Exception as e:
+        print(f"  [官方來源] 搜尋失敗: {e}")
+    
+    # === 第二階段：一般搜尋 ===
+    print(f"\n  [階段2] 進行一般搜尋...")
     valid_results = []
     
     try:
         # 先生成更精準的搜尋查詢
-        search_query = generate_search_query(claim)
-        print(f"  → 搜尋關鍵字: {search_query}")
+        search_query = generate_search_query(claim, search_mode='general')
+        print(f"  -> 搜尋關鍵字: {search_query}")
     except Exception as e:
         print(f"  Warning: Search query generation failed ({e}), using original claim")
         search_query = claim
