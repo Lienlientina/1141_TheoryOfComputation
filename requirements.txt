@@ -2,3 +2,6 @@ requests
 python-dotenv
 ddgs
 beautifulsoup4
+flask
+flask-cors
+jsonify

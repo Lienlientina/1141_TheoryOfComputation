@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Fake News Verifier",
+  "version": "1.1",
+  "description": "Verify credibility of the current page or pasted text using an AI agent",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
