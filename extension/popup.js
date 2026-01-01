@@ -3,6 +3,7 @@ const modeSelect = document.getElementById("modeSelect");
 const newsModeDiv = document.getElementById("newsMode");
 const qaModeDiv = document.getElementById("qaMode");
 
+// ---- Update UI based on mode ----
 function updateModeUI() {
   const mode = getMode();
 
