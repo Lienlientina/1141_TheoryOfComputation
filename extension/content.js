@@ -199,22 +199,22 @@ function extractPageText() {
   let structuredText = '';
   
   if (title) {
-    structuredText += `標題：${title}\n\n`;
+    structuredText += `Title: ${title}\n\n`;
   }
   
   if (author) {
-    structuredText += `作者：${author}\n`;
+    structuredText += `Author: ${author}\n`;
   }
   
   if (date) {
-    structuredText += `發布時間：${date}\n`;
+    structuredText += `Publish Date: ${date}\n`;
   }
   
   if (author || date) {
     structuredText += '\n';
   }
   
-  structuredText += `內文：\n${content}`;
+  structuredText += `Content:\n${content}`;
   
   return {
     text: structuredText.trim(),

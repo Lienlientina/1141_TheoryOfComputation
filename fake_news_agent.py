@@ -101,7 +101,7 @@ class FakeNewsAgent:
             search_query = self.generate_search_query(claim)
             print(f"  → 搜尋關鍵字: {search_query}")
         except Exception as e:
-            print(f"  警告: 搜尋關鍵字生成失敗 ({e})，使用原claim")
+            print(f"  Warning: Search query generation failed ({e}), using original claim")
             search_query = claim
         
         try:
@@ -111,10 +111,10 @@ class FakeNewsAgent:
             # 過濾有效結果
             valid_results = [r for r in search_results if r.get('title') and r.get('body')]
         except Exception as e:
-            print(f"  錯誤: 搜尋失敗 ({e})")
+            print(f"  Error: Search failed ({e})")
             return {
                 "verdict": "Insufficient evidence",
-                "explanation": f"搜尋過程發生錯誤：{str(e)}",
+                "explanation": f"Search error: {str(e)}",
                 "evidence_count": 0,
                 "search_query": search_query
             }
@@ -122,12 +122,12 @@ class FakeNewsAgent:
         # 即使少於3個也繼續分析，但會在結果中註明
         evidence_warning = ""
         if len(valid_results) < 3:
-            evidence_warning = f"[警告] 僅找到{len(valid_results)}個證據來源（建議至少3個），判斷可能不夠全面。"
+            evidence_warning = f"[Warning] Only found {len(valid_results)} evidence source(s). Recommended: at least 3 sources."
         
         if len(valid_results) == 0:
             return {
                 "verdict": "Insufficient evidence",
-                "explanation": "完全找不到相關證據，無法驗證此主張。",
+                "explanation": "No relevant evidence found. Cannot verify this claim.",
                 "evidence_count": 0,
                 "search_query": search_query
             }
@@ -177,7 +177,7 @@ class FakeNewsAgent:
         except Exception as e:
             return {
                 "verdict": "Insufficient evidence",
-                "explanation": f"無法解析驗證結果。{evidence_warning}",
+                "explanation": f"Unable to parse verification result. {evidence_warning}",
                 "evidence_count": len(valid_results),
                 "search_query": search_query
             }
