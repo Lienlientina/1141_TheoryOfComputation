@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Fake News Verifier",
-  "version": "2.0",
-  "description": "Verify credibility of news articles and text claims using AI-powered fact-checking with multi-language support",
+  "version": "2.2",
+  "description": "Verify credibility of news articles and text claims using AI-powered fact-checking with multi-language support and official source prioritization",
   "permissions": [
     "activeTab",
     "scripting"
