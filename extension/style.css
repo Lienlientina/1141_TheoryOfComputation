@@ -1,7 +1,7 @@
 /* ---------- Layout ---------- */
 body {
   width: 420px;
-  height: 600px;
+  height: 650px;
   margin: 0;
   padding: 14px;
   box-sizing: border-box;
@@ -101,4 +101,70 @@ pre#output {
 
 .hidden {
   display: none;
+}
+
+/* ---------- Output (HTML Version) ---------- */
+.output-card {
+  height: 260px;
+  padding: 12px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.output-card h3 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.output-card h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.output-card p {
+  margin: 4px 0;
+}
+
+.output-card ul {
+  padding-left: 18px;
+  margin: 6px 0;
+}
+
+.output-card li {
+  margin-bottom: 4px;
+}
+
+.placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+/* Verdict coloring */
+.verdict-credible {
+  color: #15803d; /* green */
+  font-weight: 600;
+}
+
+.verdict-misleading {
+  color: #b91c1c; /* red */
+  font-weight: 600;
+}
+
+.verdict-uncertain {
+  color: #92400e; /* amber */
+  font-weight: 600;
+}
+
+/* Detail card */
+.detail-box {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 8px;
+  margin: 8px 0;
 }

@@ -149,7 +149,9 @@ async function verifyText(text, language = "zh-TW", publishDate = null) {
       return;
     }
     
-    output.textContent = renderResult(data);
+    //output.textContent = renderResult(data);
+    output.innerHTML = renderHTMLResult(data);
+
   } catch (err) {
     output.textContent = `Cannot connect to server.\n\nPlease make sure:\n1. fake_news_server.py is running\n2. Server is on http://127.0.0.1:5000\n\nError: ${err.message}`;
   }
@@ -229,4 +231,96 @@ function renderResult(result) {
     
     return text;
   }
+}
+
+function renderHTMLResult(result) {
+
+  // News Article Mode
+  if (result.mode === "news_article") {
+    const verdictClass =
+      result.title_verdict === "CREDIBLE"
+        ? "verdict-credible"
+        : result.title_verdict === "MISLEADING"
+        ? "verdict-misleading"
+        : "verdict-uncertain";
+
+    let html = `
+      <h3>📰 News Title</h3>
+      <p>${result.title}</p>
+
+      <h3>⚖️ Title Verdict</h3>
+      <p class="${verdictClass}">
+        ${result.title_verdict}
+      </p>
+
+      <h3>📝 Explanation</h3>
+      <p>${result.title_explanation}</p>
+
+      <h3>🔍 Verifiable Details</h3>
+    `;
+
+    result.details.forEach((d, i) => {
+      html += `
+        <div class="detail-box">
+          <h4>${i + 1}. ${d.detail}</h4>
+          <p><b>Verdict:</b> ${d.verdict}</p>
+          <p><b>Evidence:</b> ${d.evidence_count || 0} sources</p>
+          <p>${d.explanation}</p>
+        </div>
+      `;
+    });
+
+    if (result.detail_summary) {
+      html += `<h3>📊 Summary</h3><ul>`;
+      for (const [key, value] of Object.entries(result.detail_summary)) {
+        html += `<li>${key}: ${value}</li>`;
+      }
+      html += `</ul>`;
+    }
+
+    if (result.temporal_warnings) {
+      html += `<h3>⚠️ Time Warnings</h3><ul>`;
+      result.temporal_warnings.forEach(w => {
+        html += `<li>${w}</li>`;
+      });
+      html += `</ul>`;
+    }
+
+    return html;
+  }
+
+  // QA Mode
+  if (result.mode === "qa") {
+    return `
+      <h3>👤 You</h3>
+      <p>${result.question}</p>
+
+      <h3>🧠 Agent</h3>
+      <p>${result.answer}</p>
+    `;
+  }
+
+  // Plain text mode
+  let html = `
+    <h3>Overall Credibility</h3>
+    <p>${result.overall_credibility}</p>
+
+    <h3>Summary</h3>
+    <p>${result.summary}</p>
+
+    <h3>Claims</h3>
+  `;
+
+  result.claims.forEach((c, i) => {
+    html += `
+      <div class="detail-box">
+        <h4>${i + 1}. ${c.claim}</h4>
+        <p><b>Verdict:</b> ${c.verdict}</p>
+        <p><b>Evidence:</b> ${c.evidence_count || 0} sources</p>
+        <p>${c.explanation}</p>
+      </div>
+    `;
+  });
+
+  return html;
 }
